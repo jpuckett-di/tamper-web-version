@@ -34,7 +34,15 @@ function getVersion() {
 
 function createLabel() {
   const span = document.createElement("span");
-  span.style = "position: absolute; top: 0px; left: 0px; z-index: 100000; background-color:#fff; color: black; border: 1px solid black;";
+  span.style = `
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    z-index: 100000;
+    background-color:#fff;
+    color: black;
+    border: 1px solid black;
+  `;
   span.textContent = getVersion();
   document.body.prepend(span);
 }
