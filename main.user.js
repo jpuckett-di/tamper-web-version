@@ -9,6 +9,11 @@
 const VERSION_SEARCH_NEEDLE = '"version": "';
 const VERSION_SEARCH_NEEDLE_LENGTH = 12;
 const VERSION_STRING_LENGTH = 40;
+const DEALER_INSPIRE_MAST = `\n  ______  _______ _______        _______  ______ _____ __   _ _______  _____  _____  ______ _______\n  |     \\ |______ |_____| |      |______ |_____/   |   | \\  | |______ |_____]   |   |_____/ |______\n  |_____/ |______ |     | |_____ |______ |    \\_ __|__ |  \\_| ______| |       __|__ |    \\_ |______\n         Visit http://www.dealerinspire.com to Inspire your visitors and turn them into customers.\n`;
+
+function isDiSite() {
+  return document.childNodes[1].textContent === DEALER_INSPIRE_MAST;
+}
 
 function getVersion() {
   const searchVersionPosition = document.head.innerHTML.search(
@@ -34,4 +39,6 @@ function createLabel() {
   document.body.prepend(span);
 }
 
-createLabel();
+if (isDiSite()) {
+  createLabel();
+}
