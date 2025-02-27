@@ -3,7 +3,6 @@
 // @namespace   Violentmonkey Scripts
 // @match       https://*/*
 // @grant       none
-// @version     1.0
 // @author      Jeff Puckett
 // @description Shows the version of the website
 // ==/UserScript==
