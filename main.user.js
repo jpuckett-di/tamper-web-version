@@ -6,6 +6,7 @@
 // @author      Jeff Puckett
 // @description Shows the version of the website
 // ==/UserScript==
+const CURRENT_VERSION = undefined;
 const VERSION_SEARCH_NEEDLE = '"version": "';
 const VERSION_SEARCH_NEEDLE_LENGTH = 12;
 const VERSION_STRING_LENGTH = 40;
@@ -32,18 +33,31 @@ function getVersion() {
   );
 }
 
+function getLabelColor(version) {
+  if (!CURRENT_VERSION) {
+    return "black";
+  }
+
+  if (CURRENT_VERSION === version) {
+    return "green";
+  }
+
+  return "red";
+}
+
 function createLabel() {
+  const version = getVersion();
   const span = document.createElement("span");
+  span.textContent = version;
   span.style = `
     position: absolute;
     top: 0px;
     left: 0px;
     z-index: 100000;
     background-color: white;
-    color: black;
+    color: ${getLabelColor(version)};
     border: 1px solid black;
   `;
-  span.textContent = getVersion();
   document.body.prepend(span);
 }
 
