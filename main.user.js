@@ -39,7 +39,7 @@ function createLabel() {
     top: 0px;
     left: 0px;
     z-index: 100000;
-    background-color:#fff;
+    background-color: white;
     color: black;
     border: 1px solid black;
   `;
