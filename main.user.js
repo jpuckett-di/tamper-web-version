@@ -5,6 +5,8 @@
 // @grant       none
 // @author      Jeff Puckett
 // @description Shows the version of the website
+// @homepageURL https://github.com/jpuckett-di/tamper-web-version
+// @downloadURL https://raw.githubusercontent.com/jpuckett-di/tamper-web-version/refs/heads/main/main.user.js
 // ==/UserScript==
 const CURRENT_VERSION = undefined;
 const VERSION_SEARCH_NEEDLE = '"version": "';
