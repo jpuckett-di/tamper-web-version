@@ -15,49 +15,62 @@ const CACHE_BREAKER_STORAGE_KEY = "tamper-web-version-cache-breaker";
 const CACHE_BREAKER_AUTHENTICATING = "AUTHENTICATING";
 const CACHE_BREAKER_BREAKING = "BREAKING";
 
+function goHome() {
+  localStorage.removeItem(CACHE_BREAKER_STORAGE_KEY);
+  window.location.assign("/");
+}
+
 function authenticate() {
   localStorage.setItem(CACHE_BREAKER_STORAGE_KEY, CACHE_BREAKER_AUTHENTICATING);
   window.location.assign("/wp/wp-admin/");
 }
 
-function breakCache() {
-  if (
-    localStorage.getItem(CACHE_BREAKER_STORAGE_KEY) === CACHE_BREAKER_BREAKING
-  ) {
-    console.error(
-      CACHE_BREAKER_STORAGE_KEY +
-        " already attempting to break cache. aborting to prevent infinite loop"
-    );
-    return;
-  }
+function isAuthenticating() {
+  return (
+    localStorage.getItem(CACHE_BREAKER_STORAGE_KEY) ===
+    CACHE_BREAKER_AUTHENTICATING
+  );
+}
 
-  const url = document.querySelector(
+function getCacheBreakerUrl() {
+  return document.querySelector(
     'a[href*="/wp/wp-admin/admin-post.php?action=empty_cache"]'
   )?.href;
+}
+
+function logCacheBreakerError(message) {
+  console.error(CACHE_BREAKER_STORAGE_KEY + " " + message);
+}
+
+function breakCache() {
+  if (isBreakingCache()) {
+    return logCacheBreakerError("already breaking cache. aborting");
+  }
+
+  const url = getCacheBreakerUrl();
 
   if (!url) {
-    console.error(CACHE_BREAKER_STORAGE_KEY + " cache breaker url not found");
-    return;
+    return logCacheBreakerError("cache breaker url not found");
   }
 
   localStorage.setItem(CACHE_BREAKER_STORAGE_KEY, CACHE_BREAKER_BREAKING);
   window.location.assign(url);
 }
 
+function isBreakingCache() {
+  return (
+    localStorage.getItem(CACHE_BREAKER_STORAGE_KEY) === CACHE_BREAKER_BREAKING
+  );
+}
+
 function handleCacheBreaker() {
-  if (
-    localStorage.getItem(CACHE_BREAKER_STORAGE_KEY) ===
-    CACHE_BREAKER_AUTHENTICATING
-  ) {
+  if (isAuthenticating()) {
     breakCache();
     return true;
   }
 
-  if (
-    localStorage.getItem(CACHE_BREAKER_STORAGE_KEY) === CACHE_BREAKER_BREAKING
-  ) {
-    localStorage.removeItem(CACHE_BREAKER_STORAGE_KEY);
-    window.location.assign("/");
+  if (isBreakingCache()) {
+    goHome();
     return true;
   }
 
