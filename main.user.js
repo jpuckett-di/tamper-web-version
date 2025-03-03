@@ -14,13 +14,16 @@ const DEALER_INSPIRE_MAST = `\n  ______  _______ _______        _______  ______ 
 const CACHE_BREAKER_STORAGE_KEY = "tamper-web-version-cache-breaker";
 const CACHE_BREAKER_AUTHENTICATING = "AUTHENTICATING";
 const CACHE_BREAKER_BREAKING = "BREAKING";
+const CONTAINER_ID = "tamper-web-version-container";
 
 function goHome() {
+  createCacheBreakerContainer("going home...");
   localStorage.removeItem(CACHE_BREAKER_STORAGE_KEY);
   window.location.assign("/");
 }
 
 function authenticate() {
+  createCacheBreakerContainer("authenticating...");
   localStorage.setItem(CACHE_BREAKER_STORAGE_KEY, CACHE_BREAKER_AUTHENTICATING);
   window.location.assign("/wp/wp-admin/");
 }
@@ -43,6 +46,8 @@ function logCacheBreakerError(message) {
 }
 
 function breakCache() {
+  createCacheBreakerContainer("breaking cache...");
+
   if (isBreakingCache()) {
     return logCacheBreakerError("already breaking cache. aborting");
   }
@@ -118,6 +123,13 @@ function makeVersionSpan() {
   return span;
 }
 
+function makeCacheBreakerSpan(message) {
+  const span = document.createElement("span");
+  span.textContent = message;
+  return span;
+}
+
+
 function makeCacheBreakerButton() {
   const button = document.createElement("button");
   button.textContent = "break cache";
@@ -125,8 +137,10 @@ function makeCacheBreakerButton() {
   return button;
 }
 
-function createContainer() {
+function createContainer(contents) {
+  document.getElementById(CONTAINER_ID)?.remove();
   const div = document.createElement("div");
+  div.id = CONTAINER_ID;
   div.style = `
     position: absolute;
     top: 0px;
@@ -135,11 +149,22 @@ function createContainer() {
     background-color: white;
     border: 1px solid black;
   `;
-  div.appendChild(makeVersionSpan());
-  div.appendChild(makeCacheBreakerButton());
+
+  contents.forEach(element => {
+    div.appendChild(element);
+  });
+
   document.body.prepend(div);
 }
 
+function createVersionContainer() {
+  createContainer([makeVersionSpan(), makeCacheBreakerButton()]);
+}
+
+function createCacheBreakerContainer(message) {
+  createContainer([makeCacheBreakerSpan(message)]);
+}
+
 if (!handleCacheBreaker() && isDiSite()) {
-  createContainer();
+  createVersionContainer()
 }
