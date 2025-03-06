@@ -4,7 +4,7 @@
 // @match       https://*/*
 // @grant       none
 // @author      Jeff Puckett
-// @version 1.2.1
+// @version 1.3.0
 // @description Shows the version of the website
 // @homepageURL https://github.com/jpuckett-di/tamper-web-version
 // @downloadURL https://raw.githubusercontent.com/jpuckett-di/tamper-web-version/refs/heads/main/main.user.js
@@ -14,26 +14,39 @@ const VERSION_SEARCH_NEEDLE = '"version": "';
 const VERSION_SEARCH_NEEDLE_LENGTH = 12;
 const VERSION_STRING_LENGTH = 40;
 const DEALER_INSPIRE_MAST = `\n  ______  _______ _______        _______  ______ _____ __   _ _______  _____  _____  ______ _______\n  |     \\ |______ |_____| |      |______ |_____/   |   | \\  | |______ |_____]   |   |_____/ |______\n  |_____/ |______ |     | |_____ |______ |    \\_ __|__ |  \\_| ______| |       __|__ |    \\_ |______\n         Visit http://www.dealerinspire.com to Inspire your visitors and turn them into customers.\n`;
-const CACHE_BREAKER_STORAGE_KEY = "tamper-web-version-cache-breaker";
+const CACHE_BREAKER_STATUS_STORAGE_KEY =
+  "tamper-web-version-cache-breaker-status";
+const CACHE_BREAKER_REDIRECT_URL_STORAGE_KEY =
+  "tamper-web-version-cache-breaker-redirect-url";
 const CACHE_BREAKER_AUTHENTICATING = "AUTHENTICATING";
 const CACHE_BREAKER_BREAKING = "BREAKING";
 const CONTAINER_ID = "tamper-web-version-container";
 
-function goHome() {
-  createCacheBreakerContainer("going home...");
-  localStorage.removeItem(CACHE_BREAKER_STORAGE_KEY);
-  window.location.assign("/");
+function goBack() {
+  createCacheBreakerContainer("going back...");
+  const url =
+    localStorage.getItem(CACHE_BREAKER_REDIRECT_URL_STORAGE_KEY) ?? "/";
+  localStorage.removeItem(CACHE_BREAKER_REDIRECT_URL_STORAGE_KEY);
+  localStorage.removeItem(CACHE_BREAKER_STATUS_STORAGE_KEY);
+  window.location.assign(url);
 }
 
 function authenticate() {
   createCacheBreakerContainer("authenticating...");
-  localStorage.setItem(CACHE_BREAKER_STORAGE_KEY, CACHE_BREAKER_AUTHENTICATING);
+  localStorage.setItem(
+    CACHE_BREAKER_STATUS_STORAGE_KEY,
+    CACHE_BREAKER_AUTHENTICATING
+  );
+  localStorage.setItem(
+    CACHE_BREAKER_REDIRECT_URL_STORAGE_KEY,
+    window.location.href
+  );
   window.location.assign("/wp/wp-admin/");
 }
 
 function isAuthenticating() {
   return (
-    localStorage.getItem(CACHE_BREAKER_STORAGE_KEY) ===
+    localStorage.getItem(CACHE_BREAKER_STATUS_STORAGE_KEY) ===
     CACHE_BREAKER_AUTHENTICATING
   );
 }
@@ -45,7 +58,7 @@ function getCacheBreakerUrl() {
 }
 
 function logCacheBreakerError(message) {
-  console.error(CACHE_BREAKER_STORAGE_KEY + " " + message);
+  console.error(CACHE_BREAKER_STATUS_STORAGE_KEY + " " + message);
 }
 
 function breakCache() {
@@ -61,13 +74,17 @@ function breakCache() {
     return logCacheBreakerError("cache breaker url not found");
   }
 
-  localStorage.setItem(CACHE_BREAKER_STORAGE_KEY, CACHE_BREAKER_BREAKING);
+  localStorage.setItem(
+    CACHE_BREAKER_STATUS_STORAGE_KEY,
+    CACHE_BREAKER_BREAKING
+  );
   window.location.assign(url);
 }
 
 function isBreakingCache() {
   return (
-    localStorage.getItem(CACHE_BREAKER_STORAGE_KEY) === CACHE_BREAKER_BREAKING
+    localStorage.getItem(CACHE_BREAKER_STATUS_STORAGE_KEY) ===
+    CACHE_BREAKER_BREAKING
   );
 }
 
@@ -78,7 +95,7 @@ function handleCacheBreaker() {
   }
 
   if (isBreakingCache()) {
-    goHome();
+    goBack();
     return true;
   }
 
@@ -132,7 +149,6 @@ function makeCacheBreakerSpan(message) {
   return span;
 }
 
-
 function makeCacheBreakerButton() {
   const button = document.createElement("button");
   button.textContent = "break cache";
@@ -153,7 +169,7 @@ function createContainer(contents) {
     border: 1px solid black;
   `;
 
-  contents.forEach(element => {
+  contents.forEach((element) => {
     div.appendChild(element);
   });
 
@@ -169,5 +185,5 @@ function createCacheBreakerContainer(message) {
 }
 
 if (!handleCacheBreaker() && isDiSite()) {
-  createVersionContainer()
+  createVersionContainer();
 }
