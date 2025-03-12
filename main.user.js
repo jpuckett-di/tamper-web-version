@@ -4,7 +4,7 @@
 // @match       https://*/*
 // @grant       none
 // @author      Jeff Puckett
-// @version 1.3.0
+// @version 1.3.1
 // @description Shows the version of the website
 // @homepageURL https://github.com/jpuckett-di/tamper-web-version
 // @downloadURL https://raw.githubusercontent.com/jpuckett-di/tamper-web-version/refs/heads/main/main.user.js
@@ -103,7 +103,14 @@ function handleCacheBreaker() {
 }
 
 function isDiSite() {
-  return document.childNodes[1]?.textContent === DEALER_INSPIRE_MAST;
+  // Check multiple possible child nodes for the DI mast
+  for (let i = 0; i < document.childNodes.length; i++) {
+    if (document.childNodes[i]?.textContent === DEALER_INSPIRE_MAST) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 function getVersion() {
