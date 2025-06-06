@@ -4,7 +4,7 @@
 // @match       https://*/*
 // @grant       none
 // @author      Jeff Puckett
-// @version 1.3.1
+// @version 1.4.0
 // @description Shows the version of the website
 // @homepageURL https://github.com/jpuckett-di/tamper-web-version
 // @downloadURL https://raw.githubusercontent.com/jpuckett-di/tamper-web-version/refs/heads/main/main.user.js
@@ -159,7 +159,30 @@ function makeCacheBreakerSpan(message) {
 function makeCacheBreakerButton() {
   const button = document.createElement("button");
   button.textContent = "break cache";
+  button.style = `
+    cursor: pointer;
+    margin-left: 5px;
+  `;
   button.onclick = authenticate;
+  return button;
+}
+
+function makeCloseButton() {
+  const button = document.createElement("button");
+  button.textContent = "×";
+  button.style = `
+    background: none;
+    border: none;
+    font-size: 14px;
+    cursor: pointer;
+    margin-right: 5px;
+    padding: 0 3px;
+    color: #666;
+  `;
+  button.onclick = function() {
+    document.getElementById(CONTAINER_ID)?.remove();
+  };
+  button.title = "Close version display";
   return button;
 }
 
@@ -184,7 +207,7 @@ function createContainer(contents) {
 }
 
 function createVersionContainer() {
-  createContainer([makeVersionSpan(), makeCacheBreakerButton()]);
+  createContainer([makeCloseButton(), makeVersionSpan(), makeCacheBreakerButton()]);
 }
 
 function createCacheBreakerContainer(message) {
