@@ -4,12 +4,13 @@
 // @match       https://*/*
 // @grant       none
 // @author      Jeff Puckett
-// @version 1.4.0
+// @version 1.5.0
 // @description Shows the version of the website
 // @homepageURL https://github.com/jpuckett-di/tamper-web-version
 // @downloadURL https://raw.githubusercontent.com/jpuckett-di/tamper-web-version/refs/heads/main/main.user.js
 // ==/UserScript==
-const CURRENT_VERSION = undefined;
+const CURRENT_VERSION_MSP = undefined; // Multi-site platform Git SHA hash (40 hex characters)
+const CURRENT_VERSION_SSP = undefined; // Single-site platform Integer (as string) version
 const VERSION_SEARCH_NEEDLE = '"version": "';
 const VERSION_SEARCH_NEEDLE_LENGTH = 12;
 const VERSION_STRING_LENGTH = 40;
@@ -124,18 +125,38 @@ function getVersion() {
 
   const versionPosition = searchVersionPosition + VERSION_SEARCH_NEEDLE_LENGTH;
 
-  return document.head.innerHTML.substring(
+  // First, try to extract a git SHA (40 hex characters)
+  const potentialSha = document.head.innerHTML.substring(
     versionPosition,
     versionPosition + VERSION_STRING_LENGTH
   );
+
+  if (/^[0-9a-f]{40}$/i.test(potentialSha)) {
+    return potentialSha;
+  }
+
+  // Next, try to extract an integer version (find the closing quote)
+  const closingQuotePos = document.head.innerHTML.indexOf('"', versionPosition);
+  if (closingQuotePos !== -1) {
+    const versionStr = document.head.innerHTML.substring(
+      versionPosition,
+      closingQuotePos
+    );
+    if (/^\d+$/.test(versionStr)) {
+      return versionStr;
+    }
+  }
+
+  // Fallback to current behavior (return 40 chars from version position)
+  return potentialSha;
 }
 
 function getLabelColor(version) {
-  if (!CURRENT_VERSION) {
+  if (!CURRENT_VERSION_MSP && !CURRENT_VERSION_SSP) {
     return "black";
   }
 
-  if (CURRENT_VERSION === version) {
+  if (CURRENT_VERSION_MSP === version || CURRENT_VERSION_SSP === version) {
     return "green";
   }
 
@@ -179,7 +200,7 @@ function makeCloseButton() {
     padding: 0 3px;
     color: #666;
   `;
-  button.onclick = function() {
+  button.onclick = function () {
     document.getElementById(CONTAINER_ID)?.remove();
   };
   button.title = "Close version display";
