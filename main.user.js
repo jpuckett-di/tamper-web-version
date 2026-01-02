@@ -4,7 +4,7 @@
 // @match       https://*/*
 // @grant       none
 // @author      Jeff Puckett
-// @version 1.5.0
+// @version 1.6.0
 // @description Shows the version of the website
 // @homepageURL https://github.com/jpuckett-di/tamper-web-version
 // @downloadURL https://raw.githubusercontent.com/jpuckett-di/tamper-web-version/refs/heads/main/main.user.js
@@ -14,6 +14,9 @@ const CURRENT_VERSION_SSP = undefined; // Single-site platform Integer (as strin
 const VERSION_SEARCH_NEEDLE = '"version": "';
 const VERSION_SEARCH_NEEDLE_LENGTH = 12;
 const VERSION_STRING_LENGTH = 40;
+const SLUG_SEARCH_NEEDLE = '"slug": "';
+const SLUG_SEARCH_NEEDLE_LENGTH = 9;
+const STAGING_URL_TEMPLATE = "https://SLUG.staging.ws-staging-232-automode.cars-cloud.com";
 const DEALER_INSPIRE_MAST = `\n  ______  _______ _______        _______  ______ _____ __   _ _______  _____  _____  ______ _______\n  |     \\ |______ |_____| |      |______ |_____/   |   | \\  | |______ |_____]   |   |_____/ |______\n  |_____/ |______ |     | |_____ |______ |    \\_ __|__ |  \\_| ______| |       __|__ |    \\_ |______\n         Visit http://www.dealerinspire.com to Inspire your visitors and turn them into customers.\n`;
 const CACHE_BREAKER_STATUS_STORAGE_KEY =
   "tamper-web-version-cache-breaker-status";
@@ -151,6 +154,23 @@ function getVersion() {
   return potentialSha;
 }
 
+function getSlug() {
+  const searchSlugPosition = document.head.innerHTML.search(SLUG_SEARCH_NEEDLE);
+
+  if (searchSlugPosition === -1) {
+    return null;
+  }
+
+  const slugPosition = searchSlugPosition + SLUG_SEARCH_NEEDLE_LENGTH;
+  const closingQuotePos = document.head.innerHTML.indexOf('"', slugPosition);
+
+  if (closingQuotePos === -1) {
+    return null;
+  }
+
+  return document.head.innerHTML.substring(slugPosition, closingQuotePos);
+}
+
 function getLabelColor(version) {
   if (!CURRENT_VERSION_MSP && !CURRENT_VERSION_SSP) {
     return "black";
@@ -186,6 +206,24 @@ function makeCacheBreakerButton() {
   `;
   button.onclick = authenticate;
   return button;
+}
+
+function makeStagingLink() {
+  const slug = getSlug();
+  if (!slug) {
+    return null;
+  }
+
+  const link = document.createElement("a");
+  link.href = STAGING_URL_TEMPLATE.replace("SLUG", slug);
+  link.textContent = "staging";
+  link.target = "_blank";
+  link.style = `
+    margin-left: 5px;
+    color: blue;
+    text-decoration: underline;
+  `;
+  return link;
 }
 
 function makeCloseButton() {
@@ -228,7 +266,13 @@ function createContainer(contents) {
 }
 
 function createVersionContainer() {
-  createContainer([makeCloseButton(), makeVersionSpan(), makeCacheBreakerButton()]);
+  const elements = [makeCloseButton(), makeVersionSpan()];
+  const stagingLink = makeStagingLink();
+  if (stagingLink) {
+    elements.push(stagingLink);
+  }
+  elements.push(makeCacheBreakerButton());
+  createContainer(elements);
 }
 
 function createCacheBreakerContainer(message) {
