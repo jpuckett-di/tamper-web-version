@@ -26,5 +26,6 @@ The version label will display:
 ## Features
 
 - **Version Display**: Shows the current website version (SHA hash or integer)
+- **Search Provider**: Displays `A` for sites on Algolia, and `SS` for new sites on the Search Service
 - **Staging Link**: Provides a quick link to the _MSP_ staging environment based on the site's slug
 - **Cache Breaker**: Button to clear the site cache (requires WP admin authentication)
