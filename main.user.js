@@ -231,10 +231,11 @@ function getSearchProviderLabelState() {
   const toggleMatchesWindow =
     (searchServiceEnabled && provider === SEARCH_PROVIDER_SEARCH_SERVICE) ||
     (!searchServiceEnabled && provider === SEARCH_PROVIDER_ALGOLIA);
+  const mismatch = !toggleMatchesWindow && provider !== SEARCH_PROVIDER_OFF;
   return {
     text,
     bold: toggleMatchesWindow,
-    color: toggleMatchesWindow ? "black" : "red",
+    color: mismatch ? "red" : "black",
   };
 }
 
