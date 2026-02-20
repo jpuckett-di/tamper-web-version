@@ -4,12 +4,12 @@
 // @match       https://*/*
 // @grant       none
 // @author      Jeff Puckett
-// @version 1.7.0
+// @version 1.7.1
 // @description Shows the version of the website with some additonal status and controls
 // @homepageURL https://github.com/jpuckett-di/tamper-web-version
 // @downloadURL https://raw.githubusercontent.com/jpuckett-di/tamper-web-version/refs/heads/main/main.user.js
 // ==/UserScript==
-const CURRENT_VERSION_MSP = "76a81b98d1937a1ce37790530844dfffccc84932"; // Multi-site platform Git SHA hash (40 hex characters)
+const CURRENT_VERSION_MSP = undefined; // Multi-site platform Git SHA hash (40 hex characters)
 const CURRENT_VERSION_SSP = undefined; // Single-site platform Integer (as string) version
 const VERSION_SEARCH_NEEDLE = '"version": "';
 const VERSION_SEARCH_NEEDLE_LENGTH = 12;
