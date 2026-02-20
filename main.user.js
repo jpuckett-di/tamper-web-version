@@ -225,21 +225,24 @@ function setSearchProvider(value) {
 }
 
 function getSearchProviderLabelState() {
+  const searchServiceEnabled = window.SEARCH_SERVICE?.enabled === "1";
+  const text = searchServiceEnabled ? "SS" : "A";
   const provider = getSearchProvider();
-  if (provider === SEARCH_PROVIDER_ALGOLIA) {
-    return { text: "A", bold: true };
-  }
-  if (provider === SEARCH_PROVIDER_SEARCH_SERVICE) {
-    return { text: "SS", bold: true };
-  }
-  const text = window.SEARCH_SERVICE?.enabled === "1" ? "SS" : "A";
-  return { text, bold: false };
+  const toggleMatchesWindow =
+    (searchServiceEnabled && provider === SEARCH_PROVIDER_SEARCH_SERVICE) ||
+    (!searchServiceEnabled && provider === SEARCH_PROVIDER_ALGOLIA);
+  return {
+    text,
+    bold: toggleMatchesWindow,
+    color: toggleMatchesWindow ? "black" : "red",
+  };
 }
 
 function applySearchProviderLabelState(span) {
   const state = getSearchProviderLabelState();
   span.textContent = state.text;
   span.style.fontWeight = state.bold ? "bold" : "normal";
+  span.style.color = state.color;
 }
 
 function makeSearchProviderDropdown(updateLabelSpan) {
