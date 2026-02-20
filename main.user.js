@@ -224,6 +224,59 @@ function setSearchProvider(value) {
   localStorage.setItem(SEARCH_PROVIDER_STORAGE_KEY, value);
 }
 
+function getInventorySearchProviderHeaderValue() {
+  const provider = getSearchProvider();
+  if (provider === SEARCH_PROVIDER_ALGOLIA) return "algolia";
+  if (provider === SEARCH_PROVIDER_SEARCH_SERVICE) return "search-service";
+  return null;
+}
+
+function isRequestToPrimaryDomain(url) {
+  try {
+    const requestOrigin = new URL(url, location.href).origin;
+    return requestOrigin === location.origin;
+  } catch {
+    return false;
+  }
+}
+
+function installRequestHeaderInterceptor() {
+  const headerName = "inventory-search-provider";
+
+  const nativeXHR = window.XMLHttpRequest;
+  window.XMLHttpRequest = function () {
+    const xhr = new nativeXHR();
+    let requestUrl = "";
+    const origOpen = xhr.open;
+    xhr.open = function (method, url, ...rest) {
+      requestUrl = typeof url === "string" ? url : String(url);
+      return origOpen.apply(this, [method, url, ...rest]);
+    };
+    const origSend = xhr.send;
+    xhr.send = function (...args) {
+      const value = getInventorySearchProviderHeaderValue();
+      if (value && isRequestToPrimaryDomain(requestUrl)) {
+        xhr.setRequestHeader(headerName, value);
+      }
+      return origSend.apply(this, args);
+    };
+    return xhr;
+  };
+
+  const nativeFetch = window.fetch;
+  window.fetch = function (input, init) {
+    const url = typeof input === "string" ? input : input?.url;
+    const value = getInventorySearchProviderHeaderValue();
+    if (value && url && isRequestToPrimaryDomain(url)) {
+      init = init || {};
+      const headers = new Headers(init.headers);
+      headers.set(headerName, value);
+      init = { ...init, headers };
+    }
+    return nativeFetch(input, init);
+  };
+}
+
 function getSearchProviderLabelState() {
   const searchServiceEnabled = window.SEARCH_SERVICE?.enabled === "1";
   const text = searchServiceEnabled ? "SS" : "A";
@@ -408,6 +461,8 @@ function createVersionContainer() {
 function createCacheBreakerContainer(message) {
   createContainer([makeCacheBreakerSpan(message)]);
 }
+
+installRequestHeaderInterceptor();
 
 if (!handleCacheBreaker() && isDiSite()) {
   createVersionContainer();
