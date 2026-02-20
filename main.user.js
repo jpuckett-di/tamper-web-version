@@ -25,6 +25,10 @@ const CACHE_BREAKER_REDIRECT_URL_STORAGE_KEY =
 const CACHE_BREAKER_AUTHENTICATING = "AUTHENTICATING";
 const CACHE_BREAKER_BREAKING = "BREAKING";
 const CONTAINER_ID = "tamper-web-version-container";
+const SEARCH_PROVIDER_STORAGE_KEY = "tamper-web-version-search-provider";
+const SEARCH_PROVIDER_ALGOLIA = "algolia";
+const SEARCH_PROVIDER_OFF = "off";
+const SEARCH_PROVIDER_SEARCH_SERVICE = "search_service";
 
 function goBack() {
   createCacheBreakerContainer("going back...");
@@ -208,12 +212,122 @@ function makeCacheBreakerButton() {
   return button;
 }
 
+function getSearchProvider() {
+  const v = localStorage.getItem(SEARCH_PROVIDER_STORAGE_KEY);
+  if (v === SEARCH_PROVIDER_ALGOLIA || v === SEARCH_PROVIDER_OFF || v === SEARCH_PROVIDER_SEARCH_SERVICE) {
+    return v;
+  }
+  return SEARCH_PROVIDER_OFF;
+}
+
+function setSearchProvider(value) {
+  localStorage.setItem(SEARCH_PROVIDER_STORAGE_KEY, value);
+}
+
+function getSearchProviderLabelState() {
+  const provider = getSearchProvider();
+  if (provider === SEARCH_PROVIDER_ALGOLIA) {
+    return { text: "A", bold: true };
+  }
+  if (provider === SEARCH_PROVIDER_SEARCH_SERVICE) {
+    return { text: "SS", bold: true };
+  }
+  const text = window.SEARCH_SERVICE?.enabled === "1" ? "SS" : "A";
+  return { text, bold: false };
+}
+
+function applySearchProviderLabelState(span) {
+  const state = getSearchProviderLabelState();
+  span.textContent = state.text;
+  span.style.fontWeight = state.bold ? "bold" : "normal";
+}
+
+function makeSearchProviderDropdown(updateLabelSpan) {
+  const provider = getSearchProvider();
+  const wrap = document.createElement("div");
+  wrap.style = `
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 4px 6px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background: #f8f8f8;
+  `;
+  const labels = [
+    [SEARCH_PROVIDER_ALGOLIA, "Algolia"],
+    [SEARCH_PROVIDER_OFF, "Off"],
+    [SEARCH_PROVIDER_SEARCH_SERVICE, "Search Service"],
+  ];
+  labels.forEach(([value, label]) => {
+    const btn = document.createElement("button");
+    btn.textContent = label;
+    btn.dataset.provider = value;
+    btn.style = `
+      padding: 2px 8px;
+      font-size: 12px;
+      cursor: pointer;
+      border: 1px solid #ccc;
+      background: ${provider === value ? "#e0e0e0" : "#fff"};
+      font-weight: ${provider === value ? "bold" : "normal"};
+    `;
+    btn.onclick = () => {
+      setSearchProvider(value);
+      updateLabelSpan();
+      wrap.querySelectorAll("button").forEach((b) => {
+        b.style.background = b.dataset.provider === value ? "#e0e0e0" : "#fff";
+        b.style.fontWeight = b.dataset.provider === value ? "bold" : "normal";
+      });
+      dropdown.remove();
+      document.removeEventListener("click", closeOnClickOutside);
+    };
+    wrap.appendChild(btn);
+  });
+  return wrap;
+}
+
 function makeSearchServiceIndicatorSpan() {
-  const span = document.createElement("span");
-  span.textContent =
-    window.SEARCH_SERVICE?.enabled === "1" ? "SS" : "A";
-  span.style = "margin-left: 5px;";
-  return span;
+  const wrapper = document.createElement("span");
+  wrapper.style = "margin-left: 5px; position: relative; display: inline-block;";
+
+  const label = document.createElement("span");
+  label.style = "cursor: pointer; user-select: none;";
+  applySearchProviderLabelState(label);
+
+  let dropdown = null;
+
+  function closeOnClickOutside(e) {
+    if (wrapper.contains(e.target)) return;
+    if (dropdown) dropdown.remove();
+    dropdown = null;
+    document.removeEventListener("click", closeOnClickOutside);
+  }
+
+  label.onclick = (e) => {
+    e.stopPropagation();
+    if (dropdown) {
+      dropdown.remove();
+      dropdown = null;
+      document.removeEventListener("click", closeOnClickOutside);
+      return;
+    }
+    dropdown = document.createElement("div");
+    dropdown.style = `
+      position: absolute;
+      top: 100%;
+      left: 0;
+      margin-top: 2px;
+      z-index: 100001;
+    `;
+    dropdown.appendChild(
+      makeSearchProviderDropdown(() => applySearchProviderLabelState(label))
+    );
+    wrapper.appendChild(dropdown);
+    document.addEventListener("click", closeOnClickOutside);
+  };
+
+  wrapper.appendChild(label);
+  return wrapper;
 }
 
 function makeStagingLink() {
