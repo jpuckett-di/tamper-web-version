@@ -299,7 +299,7 @@ function applySearchProviderLabelState(span) {
   span.style.color = state.color;
 }
 
-function makeSearchProviderDropdown(updateLabelSpan) {
+function makeSearchProviderDropdown(updateLabelSpan, closeDropdown) {
   const provider = getSearchProvider();
   const wrap = document.createElement("div");
   wrap.style = `
@@ -335,8 +335,7 @@ function makeSearchProviderDropdown(updateLabelSpan) {
         b.style.background = b.dataset.provider === value ? "#e0e0e0" : "#fff";
         b.style.fontWeight = b.dataset.provider === value ? "bold" : "normal";
       });
-      dropdown.remove();
-      document.removeEventListener("click", closeOnClickOutside);
+      closeDropdown();
     };
     wrap.appendChild(btn);
   });
@@ -376,8 +375,16 @@ function makeSearchServiceIndicatorSpan() {
       margin-top: 2px;
       z-index: 100001;
     `;
+    const closeDropdown = () => {
+      if (dropdown) dropdown.remove();
+      dropdown = null;
+      document.removeEventListener("click", closeOnClickOutside);
+    };
     dropdown.appendChild(
-      makeSearchProviderDropdown(() => applySearchProviderLabelState(label))
+      makeSearchProviderDropdown(
+        () => applySearchProviderLabelState(label),
+        closeDropdown
+      )
     );
     wrapper.appendChild(dropdown);
     document.addEventListener("click", closeOnClickOutside);
