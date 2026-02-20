@@ -241,7 +241,7 @@ function isRequestToPrimaryDomain(url) {
 }
 
 function installRequestHeaderInterceptor() {
-  const headerName = "inventory-search-provider";
+  const headerName = "carscommerce-inventory-search-provider";
 
   const nativeXHR = window.XMLHttpRequest;
   window.XMLHttpRequest = function () {
