@@ -4,7 +4,7 @@
 // @match       https://*/*
 // @grant       none
 // @author      Jeff Puckett
-// @version 1.7.1
+// @version 1.8.0
 // @description Shows the version of the website with some additonal status and controls
 // @homepageURL https://github.com/jpuckett-di/tamper-web-version
 // @downloadURL https://raw.githubusercontent.com/jpuckett-di/tamper-web-version/refs/heads/main/main.user.js
@@ -210,9 +210,16 @@ function makeCacheBreakerButton() {
 
 function makeSearchServiceIndicatorSpan() {
   const span = document.createElement("span");
-  span.textContent =
-    window.SEARCH_SERVICE?.enabled === "1" ? "SS" : "A";
-  span.style = "margin-left: 5px;";
+  const searchServiceEnabled = window.SEARCH_SERVICE?.enabled === "1";
+  const override = window.SEARCH_PROVIDER_OVERRIDE?.provider;
+  span.textContent = searchServiceEnabled ? "SS" : "A";
+  const bold =
+    (override === "search-service" && searchServiceEnabled) ||
+    (override === "algolia" && !searchServiceEnabled);
+  const red =
+    (override === "search-service" && !searchServiceEnabled) ||
+    (override === "algolia" && searchServiceEnabled);
+  span.style = `margin-left: 5px; font-weight: ${bold ? "bold" : "normal"}; color: ${red ? "red" : "black"};`;
   return span;
 }
 
