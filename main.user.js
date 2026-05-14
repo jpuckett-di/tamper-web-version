@@ -2,9 +2,13 @@
 // @name        DI Website Version
 // @namespace   Violentmonkey Scripts
 // @match       https://*/*
-// @grant       none
+// @grant       GM.getValue
+// @grant       GM.setValue
+// @grant       GM.xmlHttpRequest
+// @grant       unsafeWindow
+// @connect     api.github.com
 // @author      Jeff Puckett
-// @version 1.9.0
+// @version 1.10.0
 // @description Shows the version of the website with some additonal status and controls
 // @homepageURL https://github.com/jpuckett-di/tamper-web-version
 // @downloadURL https://raw.githubusercontent.com/jpuckett-di/tamper-web-version/refs/heads/main/main.user.js
@@ -25,6 +29,145 @@ const CACHE_BREAKER_REDIRECT_URL_STORAGE_KEY =
 const CACHE_BREAKER_AUTHENTICATING = "AUTHENTICATING";
 const CACHE_BREAKER_BREAKING = "BREAKING";
 const CONTAINER_ID = "tamper-web-version-container";
+const GITHUB_PAT_STORAGE_KEY = "tamper-web-version-github-pat";
+const SITES_JSON_API_URL =
+  "https://api.github.com/repos/carsdotcom/di-websites-live-history/contents/web/sites.json?ref=main";
+
+function pageWindow() {
+  return typeof unsafeWindow !== "undefined" ? unsafeWindow : window;
+}
+
+function githubApiGetSitesJson(url, token) {
+  return new Promise((resolve, reject) => {
+    GM.xmlHttpRequest({
+      method: "GET",
+      url,
+      headers: {
+        Accept: "application/vnd.github.raw",
+        Authorization: `Bearer ${token}`,
+        "X-GitHub-Api-Version": "2022-11-28",
+      },
+      onload(resp) {
+        if (resp.status >= 200 && resp.status < 300) {
+          try {
+            const data = JSON.parse(resp.responseText);
+            if (!Array.isArray(data.sites)) {
+              reject(new Error('sites.json missing top-level "sites" array'));
+              return;
+            }
+            resolve(data);
+          } catch (e) {
+            reject(e);
+          }
+        } else {
+          reject(
+            new Error(
+              `GitHub API HTTP ${resp.status}: ${resp.responseText?.slice(0, 300) ?? ""}`
+            )
+          );
+        }
+      },
+      onerror() {
+        reject(new Error("GitHub API request failed (network)"));
+      },
+    });
+  });
+}
+
+function findSiteRecord(sites, slug) {
+  return sites.find((s) => s && s.slug === slug) ?? null;
+}
+
+async function getGithubPat() {
+  let token = await GM.getValue(GITHUB_PAT_STORAGE_KEY, "");
+  if (typeof token !== "string") {
+    token = "";
+  }
+  token = token.trim();
+  if (token) {
+    return token;
+  }
+  const entered = prompt(
+    "GitHub personal access token (read access to carsdotcom/di-websites-live-history):",
+    ""
+  );
+  if (!entered || !String(entered).trim()) {
+    return "";
+  }
+  const trimmed = String(entered).trim();
+  await GM.setValue(GITHUB_PAT_STORAGE_KEY, trimmed);
+  return trimmed;
+}
+
+let liveHistoryRequestGeneration = 0;
+
+async function loadLiveHistoryData(host) {
+  const generation = ++liveHistoryRequestGeneration;
+  host.textContent = "";
+
+  const slug = getSlug();
+  if (!slug) {
+    host.textContent =
+      "Live history: no slug in page head — cannot match sites.json.";
+    return;
+  }
+
+  let token;
+  try {
+    token = await getGithubPat();
+  } catch (e) {
+    if (generation !== liveHistoryRequestGeneration) {
+      return;
+    }
+    host.textContent = `Live history: could not read stored token (${e?.message ?? e})`;
+    return;
+  }
+
+  if (!token) {
+    host.textContent = "Live history: GitHub token required (canceled or empty).";
+    return;
+  }
+
+  host.textContent = "Live history: loading…";
+
+  let data;
+  try {
+    data = await githubApiGetSitesJson(SITES_JSON_API_URL, token);
+  } catch (e) {
+    if (generation !== liveHistoryRequestGeneration) {
+      return;
+    }
+    host.textContent = `Live history: ${e?.message ?? e}`;
+    return;
+  }
+
+  const match = findSiteRecord(data.sites, slug);
+  if (generation !== liveHistoryRequestGeneration) {
+    return;
+  }
+
+  host.textContent = "";
+  if (!match) {
+    host.appendChild(
+      document.createTextNode(
+        `Live history: no sites.json entry for slug "${slug}".`
+      )
+    );
+    return;
+  }
+
+  const label = document.createElement("div");
+  label.textContent = "DI Dashboard:";
+  label.style.cssText =
+    "font-weight: bold; margin-top: 4px; text-align: left; width: 100%;";
+  host.appendChild(label);
+
+  const pre = document.createElement("pre");
+  pre.style.cssText =
+    "margin: 4px 0 0; white-space: pre-wrap; max-width: min(520px, 90vw); text-align: left; font-size: 11px;";
+  pre.textContent = JSON.stringify(match, null, 2);
+  host.appendChild(pre);
+}
 
 function goBack() {
   createCacheBreakerContainer("going back...");
@@ -211,7 +354,7 @@ function makeCacheBreakerButton() {
 function appendExpandedControlRow(expandedSection, control) {
   const row = document.createElement("div");
   row.style.cssText =
-    "display: flex; flex-direction: row; align-items: center; justify-content: center; width: 100%;";
+    "display: flex; flex-direction: row; align-items: center; justify-content: flex-start; width: 100%;";
   control.style.marginLeft = "0";
   row.appendChild(control);
   expandedSection.appendChild(row);
@@ -219,8 +362,9 @@ function appendExpandedControlRow(expandedSection, control) {
 
 function makeSearchServiceIndicatorSpan() {
   const span = document.createElement("span");
-  const searchServiceEnabled = window.SEARCH_SERVICE?.enabled === "1";
-  const override = window.SEARCH_PROVIDER_OVERRIDE?.provider;
+  const w = pageWindow();
+  const searchServiceEnabled = w.SEARCH_SERVICE?.enabled === "1";
+  const override = w.SEARCH_PROVIDER_OVERRIDE?.provider;
   span.textContent = searchServiceEnabled ? "SS" : "A";
   const bold =
     (override === "search-service" && searchServiceEnabled) ||
@@ -376,6 +520,11 @@ function createVersionContainer() {
   }
   appendExpandedControlRow(expandedSection, makeCacheBreakerButton());
 
+  const liveHistoryHost = document.createElement("div");
+  liveHistoryHost.style.cssText =
+    "width: 100%; font-size: 12px; text-align: left; color: #333;";
+  expandedSection.appendChild(liveHistoryHost);
+
   let expanded = false;
   function setExpanded(next) {
     expanded = next;
@@ -384,7 +533,11 @@ function createVersionContainer() {
 
   function onToggleClick(event) {
     event.stopPropagation();
-    setExpanded(!expanded);
+    const next = !expanded;
+    setExpanded(next);
+    if (next) {
+      loadLiveHistoryData(liveHistoryHost);
+    }
   }
 
   versionSpan.addEventListener("click", onToggleClick);
