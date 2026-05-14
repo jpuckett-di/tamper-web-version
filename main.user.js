@@ -4,7 +4,7 @@
 // @match       https://*/*
 // @grant       none
 // @author      Jeff Puckett
-// @version 1.8.0
+// @version 1.9.0
 // @description Shows the version of the website with some additonal status and controls
 // @homepageURL https://github.com/jpuckett-di/tamper-web-version
 // @downloadURL https://raw.githubusercontent.com/jpuckett-di/tamper-web-version/refs/heads/main/main.user.js
@@ -208,6 +208,15 @@ function makeCacheBreakerButton() {
   return button;
 }
 
+function appendExpandedControlRow(expandedSection, control) {
+  const row = document.createElement("div");
+  row.style.cssText =
+    "display: flex; flex-direction: row; align-items: center; justify-content: center; width: 100%;";
+  control.style.marginLeft = "0";
+  row.appendChild(control);
+  expandedSection.appendChild(row);
+}
+
 function makeSearchServiceIndicatorSpan() {
   const span = document.createElement("span");
   const searchServiceEnabled = window.SEARCH_SERVICE?.enabled === "1";
@@ -221,6 +230,46 @@ function makeSearchServiceIndicatorSpan() {
     (override === "algolia" && searchServiceEnabled);
   span.style = `margin-left: 5px; font-weight: ${bold ? "bold" : "normal"}; color: ${red ? "red" : "black"};`;
   return span;
+}
+
+function copySlugToClipboard() {
+  const slug = getSlug();
+  if (!slug) {
+    return;
+  }
+  if (navigator.clipboard?.writeText) {
+    navigator.clipboard.writeText(slug).catch(() => copySlugToClipboardFallback(slug));
+    return;
+  }
+  copySlugToClipboardFallback(slug);
+}
+
+function copySlugToClipboardFallback(slug) {
+  const ta = document.createElement("textarea");
+  ta.value = slug;
+  ta.setAttribute("readonly", "");
+  ta.style.position = "fixed";
+  ta.style.left = "-9999px";
+  document.body.appendChild(ta);
+  ta.select();
+  document.execCommand("copy");
+  document.body.removeChild(ta);
+}
+
+function makeCopySlugButton() {
+  const slug = getSlug();
+  if (!slug) {
+    return null;
+  }
+
+  const button = document.createElement("button");
+  button.textContent = "copy slug";
+  button.style = `
+    cursor: pointer;
+    margin-left: 5px;
+  `;
+  button.onclick = copySlugToClipboard;
+  return button;
 }
 
 function makeStagingLink() {
@@ -249,7 +298,7 @@ function makeCloseButton() {
     border: none;
     font-size: 14px;
     cursor: pointer;
-    margin-right: 5px;
+    margin: 0;
     padding: 0 3px;
     color: #666;
   `;
@@ -271,6 +320,8 @@ function createContainer(contents) {
     z-index: 100000;
     background-color: white;
     border: 1px solid black;
+    display: flex;
+    flex-direction: column;
   `;
 
   contents.forEach((element) => {
@@ -281,17 +332,65 @@ function createContainer(contents) {
 }
 
 function createVersionContainer() {
-  const elements = [
-    makeCloseButton(),
-    makeVersionSpan(),
-    makeSearchServiceIndicatorSpan(),
-  ];
+  const summaryRow = document.createElement("div");
+  summaryRow.style.cssText = `
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 5px;
+    padding: 4px 6px;
+  `;
+
+  const closeButton = makeCloseButton();
+  const versionSpan = makeVersionSpan();
+  const searchServiceSpan = makeSearchServiceIndicatorSpan();
+  searchServiceSpan.style.marginLeft = "0";
+
+  const toggleTitle = "Click to show or hide controls";
+  versionSpan.title = toggleTitle;
+  versionSpan.style.cursor = "pointer";
+  searchServiceSpan.title = toggleTitle;
+  searchServiceSpan.style.cursor = "pointer";
+
+  summaryRow.appendChild(closeButton);
+  summaryRow.appendChild(versionSpan);
+  summaryRow.appendChild(searchServiceSpan);
+
+  const expandedSection = document.createElement("div");
+  expandedSection.style.cssText = `
+    display: none;
+    flex-direction: column;
+    gap: 6px;
+    border-top: 1px solid #ccc;
+    padding: 6px;
+  `;
+
   const stagingLink = makeStagingLink();
   if (stagingLink) {
-    elements.push(stagingLink);
+    appendExpandedControlRow(expandedSection, stagingLink);
   }
-  elements.push(makeCacheBreakerButton());
-  createContainer(elements);
+  const copySlugButton = makeCopySlugButton();
+  if (copySlugButton) {
+    appendExpandedControlRow(expandedSection, copySlugButton);
+  }
+  appendExpandedControlRow(expandedSection, makeCacheBreakerButton());
+
+  let expanded = false;
+  function setExpanded(next) {
+    expanded = next;
+    expandedSection.style.display = expanded ? "flex" : "none";
+  }
+
+  function onToggleClick(event) {
+    event.stopPropagation();
+    setExpanded(!expanded);
+  }
+
+  versionSpan.addEventListener("click", onToggleClick);
+  searchServiceSpan.addEventListener("click", onToggleClick);
+
+  createContainer([summaryRow, expandedSection]);
 }
 
 function createCacheBreakerContainer(message) {
