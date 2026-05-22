@@ -78,6 +78,13 @@ function findSiteRecord(sites, slug) {
   return sites.find((s) => s && s.slug === slug) ?? null;
 }
 
+function getCcidFromSiteRecord(site) {
+  if (!site || site.ccid == null || site.ccid === "") {
+    return null;
+  }
+  return String(site.ccid);
+}
+
 async function getGithubPat() {
   let token = await GM.getValue(GITHUB_PAT_STORAGE_KEY, "");
   if (typeof token !== "string") {
@@ -101,9 +108,12 @@ async function getGithubPat() {
 
 let liveHistoryRequestGeneration = 0;
 
-async function loadLiveHistoryData(host) {
+async function loadLiveHistoryData(host, copyCcidHost) {
   const generation = ++liveHistoryRequestGeneration;
   host.textContent = "";
+  if (copyCcidHost) {
+    copyCcidHost.replaceChildren();
+  }
 
   const slug = getSlug();
   if (!slug) {
@@ -161,6 +171,11 @@ async function loadLiveHistoryData(host) {
   label.style.cssText =
     "font-weight: bold; margin-top: 4px; text-align: left; width: 100%;";
   host.appendChild(label);
+
+  const ccid = getCcidFromSiteRecord(match);
+  if (ccid && copyCcidHost) {
+    appendExpandedControlRow(copyCcidHost, makeCopyCcidButton(ccid));
+  }
 
   const pre = document.createElement("pre");
   pre.style.cssText =
@@ -376,21 +391,20 @@ function makeSearchServiceIndicatorSpan() {
   return span;
 }
 
-function copySlugToClipboard() {
-  const slug = getSlug();
-  if (!slug) {
+function copyTextToClipboard(text) {
+  if (!text) {
     return;
   }
   if (navigator.clipboard?.writeText) {
-    navigator.clipboard.writeText(slug).catch(() => copySlugToClipboardFallback(slug));
+    navigator.clipboard.writeText(text).catch(() => copyTextToClipboardFallback(text));
     return;
   }
-  copySlugToClipboardFallback(slug);
+  copyTextToClipboardFallback(text);
 }
 
-function copySlugToClipboardFallback(slug) {
+function copyTextToClipboardFallback(text) {
   const ta = document.createElement("textarea");
-  ta.value = slug;
+  ta.value = text;
   ta.setAttribute("readonly", "");
   ta.style.position = "fixed";
   ta.style.left = "-9999px";
@@ -398,6 +412,16 @@ function copySlugToClipboardFallback(slug) {
   ta.select();
   document.execCommand("copy");
   document.body.removeChild(ta);
+}
+
+function copySlugToClipboard() {
+  copyTextToClipboard(getSlug());
+}
+
+function copyCcidToClipboard(ccid) {
+  return function () {
+    copyTextToClipboard(ccid);
+  };
 }
 
 function makeCopySlugButton() {
@@ -413,6 +437,17 @@ function makeCopySlugButton() {
     margin-left: 5px;
   `;
   button.onclick = copySlugToClipboard;
+  return button;
+}
+
+function makeCopyCcidButton(ccid) {
+  const button = document.createElement("button");
+  button.textContent = `Copy CCID ${ccid}`;
+  button.style = `
+    cursor: pointer;
+    margin-left: 5px;
+  `;
+  button.onclick = copyCcidToClipboard(ccid);
   return button;
 }
 
@@ -520,6 +555,9 @@ function createVersionContainer() {
     appendExpandedControlRow(expandedSection, copySlugButton);
   }
 
+  const copyCcidHost = document.createElement("div");
+  expandedSection.appendChild(copyCcidHost);
+
   const liveHistoryHost = document.createElement("div");
   liveHistoryHost.style.cssText =
     "width: 100%; font-size: 12px; text-align: left; color: #333;";
@@ -536,7 +574,7 @@ function createVersionContainer() {
     const next = !expanded;
     setExpanded(next);
     if (next) {
-      loadLiveHistoryData(liveHistoryHost);
+      loadLiveHistoryData(liveHistoryHost, copyCcidHost);
     }
   }
 
