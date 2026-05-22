@@ -8,7 +8,7 @@
 // @grant       unsafeWindow
 // @connect     api.github.com
 // @author      Jeff Puckett
-// @version 1.10.0
+// @version 1.11.0
 // @description Shows the version of the website with some additonal status and controls
 // @homepageURL https://github.com/jpuckett-di/tamper-web-version
 // @downloadURL https://raw.githubusercontent.com/jpuckett-di/tamper-web-version/refs/heads/main/main.user.js
@@ -407,7 +407,7 @@ function makeCopySlugButton() {
   }
 
   const button = document.createElement("button");
-  button.textContent = "copy slug";
+  button.textContent = `Copy Slug ${slug}`;
   button.style = `
     cursor: pointer;
     margin-left: 5px;
