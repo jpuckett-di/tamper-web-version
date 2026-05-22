@@ -21,6 +21,51 @@ const VERSION_STRING_LENGTH = 40;
 const SLUG_SEARCH_NEEDLE = '"slug": "';
 const SLUG_SEARCH_NEEDLE_LENGTH = 9;
 const STAGING_URL_TEMPLATE = "https://SLUG.staging.ws-staging-232-automode.cars-cloud.com";
+const AFF_ADMIN_URL =
+  "/wp/wp-admin/admin.php?page=diAuditorDashboard&diafilter[full_name]&diafilter[object_type]=feature_flag";
+const QUICK_LINKS = [
+  {
+    text: "Staging",
+    href() {
+      const slug = getSlug();
+      return slug ? STAGING_URL_TEMPLATE.replace("SLUG", slug) : null;
+    },
+  },
+  { text: "New", href: "/new-vehicles/" },
+  {
+    text: "CVV",
+    href: "/wp/wp-admin/edit.php?post_type=inventory&page=inventory_settings&tab=vehicle_variables",
+  },
+  {
+    text: "Sort",
+    href: "/wp/wp-admin/admin.php?page=dealerinspire-inventory-display&primary-tabs=2&vrp-tabs=4",
+  },
+  {
+    text: "Short",
+    href: "/wp/wp-admin/admin.php?page=dealerinspire-inventory-display&primary-tabs=2&vrp-tabs=6",
+  },
+  { text: "FF", href: "/wp/wp-admin/admin.php?page=feature-flags" },
+  { text: "AFF", href: AFF_ADMIN_URL },
+  {
+    text: "DITM",
+    href() {
+      const url = new URL(window.location.href);
+      url.searchParams.set("ditmdebug", "1");
+      return url.href;
+    },
+  },
+];
+
+function resolveQuickLinkHref(spec) {
+  return typeof spec.href === "function" ? spec.href() : spec.href;
+}
+
+function getQuickLinks() {
+  return QUICK_LINKS.flatMap((spec) => {
+    const href = resolveQuickLinkHref(spec);
+    return href ? [{ text: spec.text, href }] : [];
+  });
+}
 const DEALER_INSPIRE_MAST = `\n  ______  _______ _______        _______  ______ _____ __   _ _______  _____  _____  ______ _______\n  |     \\ |______ |_____| |      |______ |_____/   |   | \\  | |______ |_____]   |   |_____/ |______\n  |_____/ |______ |     | |_____ |______ |    \\_ __|__ |  \\_| ______| |       __|__ |    \\_ |______\n         Visit http://www.dealerinspire.com to Inspire your visitors and turn them into customers.\n`;
 const CACHE_BREAKER_STATUS_STORAGE_KEY =
   "tamper-web-version-cache-breaker-status";
@@ -451,22 +496,31 @@ function makeCopyCcidButton(ccid) {
   return button;
 }
 
-function makeStagingLink() {
-  const slug = getSlug();
-  if (!slug) {
+function makeQuickLink(text, href) {
+  const link = document.createElement("a");
+  link.href = href;
+  link.textContent = text;
+  link.target = "_blank";
+  link.rel = "noopener noreferrer";
+  link.style.cssText = "color: blue; text-decoration: underline;";
+  return link;
+}
+
+function makeQuickLinksRow() {
+  const links = getQuickLinks();
+  if (!links.length) {
     return null;
   }
 
-  const link = document.createElement("a");
-  link.href = STAGING_URL_TEMPLATE.replace("SLUG", slug);
-  link.textContent = "staging";
-  link.target = "_blank";
-  link.style = `
-    margin-left: 5px;
-    color: blue;
-    text-decoration: underline;
-  `;
-  return link;
+  const row = document.createElement("div");
+  row.style.cssText =
+    "display: flex; flex-direction: row; align-items: center; justify-content: flex-start; flex-wrap: wrap; gap: 8px; width: 100%;";
+
+  for (const { text, href } of links) {
+    row.appendChild(makeQuickLink(text, href));
+  }
+
+  return row;
 }
 
 function makeCloseButton() {
@@ -545,9 +599,9 @@ function createVersionContainer() {
     padding: 6px;
   `;
 
-  const stagingLink = makeStagingLink();
-  if (stagingLink) {
-    appendExpandedControlRow(expandedSection, stagingLink);
+  const quickLinksRow = makeQuickLinksRow();
+  if (quickLinksRow) {
+    expandedSection.appendChild(quickLinksRow);
   }
   appendExpandedControlRow(expandedSection, makeCacheBreakerButton());
   const copySlugButton = makeCopySlugButton();
