@@ -357,6 +357,11 @@ function getVersion() {
   return potentialSha;
 }
 
+function getDomain() {
+  const domain = window.location.hostname;
+  return domain || null;
+}
+
 function getSlug() {
   const searchSlugPosition = document.head.innerHTML.search(SLUG_SEARCH_NEEDLE);
 
@@ -463,6 +468,10 @@ function copySlugToClipboard() {
   copyTextToClipboard(getSlug());
 }
 
+function copyDomainToClipboard() {
+  copyTextToClipboard(getDomain());
+}
+
 function copyCcidToClipboard(ccid) {
   return function () {
     copyTextToClipboard(ccid);
@@ -482,6 +491,22 @@ function makeCopySlugButton() {
     margin-left: 5px;
   `;
   button.onclick = copySlugToClipboard;
+  return button;
+}
+
+function makeCopyDomainButton() {
+  const domain = getDomain();
+  if (!domain) {
+    return null;
+  }
+
+  const button = document.createElement("button");
+  button.textContent = `Copy Domain ${domain}`;
+  button.style = `
+    cursor: pointer;
+    margin-left: 5px;
+  `;
+  button.onclick = copyDomainToClipboard;
   return button;
 }
 
@@ -607,6 +632,10 @@ function createVersionContainer() {
   const copySlugButton = makeCopySlugButton();
   if (copySlugButton) {
     appendExpandedControlRow(expandedSection, copySlugButton);
+  }
+  const copyDomainButton = makeCopyDomainButton();
+  if (copyDomainButton) {
+    appendExpandedControlRow(expandedSection, copyDomainButton);
   }
 
   const copyCcidHost = document.createElement("div");
