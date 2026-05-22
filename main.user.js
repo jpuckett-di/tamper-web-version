@@ -342,7 +342,7 @@ function makeCacheBreakerSpan(message) {
 
 function makeCacheBreakerButton() {
   const button = document.createElement("button");
-  button.textContent = "break cache";
+  button.textContent = "Break Cache";
   button.style = `
     cursor: pointer;
     margin-left: 5px;
@@ -514,11 +514,11 @@ function createVersionContainer() {
   if (stagingLink) {
     appendExpandedControlRow(expandedSection, stagingLink);
   }
+  appendExpandedControlRow(expandedSection, makeCacheBreakerButton());
   const copySlugButton = makeCopySlugButton();
   if (copySlugButton) {
     appendExpandedControlRow(expandedSection, copySlugButton);
   }
-  appendExpandedControlRow(expandedSection, makeCacheBreakerButton());
 
   const liveHistoryHost = document.createElement("div");
   liveHistoryHost.style.cssText =
