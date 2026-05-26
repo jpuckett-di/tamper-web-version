@@ -76,7 +76,179 @@ const CACHE_BREAKER_REDIRECT_URL_STORAGE_KEY =
 const CACHE_BREAKER_AUTHENTICATING = "AUTHENTICATING";
 const CACHE_BREAKER_BREAKING = "BREAKING";
 const CONTAINER_ID = "tamper-web-version-container";
+const CONTAINER_STYLE_ID = "tamper-web-version-styles";
+const CONTAINER_CSS = `
+#${CONTAINER_ID} {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 2147483647;
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 13px;
+  line-height: 1.35;
+  font-weight: normal;
+  font-style: normal;
+  letter-spacing: normal;
+  text-transform: none;
+  text-align: left;
+  color: #111;
+  background: #fff;
+  border: 1px solid #333;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+#${CONTAINER_ID} *,
+#${CONTAINER_ID} *::before,
+#${CONTAINER_ID} *::after {
+  box-sizing: border-box;
+}
+#${CONTAINER_ID} button,
+#${CONTAINER_ID} a {
+  font: inherit;
+  line-height: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+}
+#${CONTAINER_ID} .twv-summary {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 4px 8px;
+}
+#${CONTAINER_ID} .twv-expanded {
+  display: none;
+  flex-direction: column;
+  gap: 8px;
+  border-top: 1px solid #ccc;
+  padding: 8px;
+}
+#${CONTAINER_ID} .twv-expanded.is-open {
+  display: flex;
+}
+#${CONTAINER_ID} .twv-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+}
+#${CONTAINER_ID} .twv-links {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 10px;
+  width: 100%;
+}
+#${CONTAINER_ID} .twv-btn {
+  appearance: none;
+  background: #f0f0f0;
+  border: 1px solid #888;
+  border-radius: 3px;
+  color: #111;
+  cursor: pointer;
+  margin: 0;
+  padding: 4px 10px;
+  text-align: center;
+  text-decoration: none;
+}
+#${CONTAINER_ID} .twv-btn:hover {
+  background: #e4e4e4;
+}
+#${CONTAINER_ID} .twv-close {
+  appearance: none;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  color: #666;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  margin: 0;
+  padding: 0 4px;
+}
+#${CONTAINER_ID} .twv-close:hover {
+  background: transparent;
+  color: #111;
+}
+#${CONTAINER_ID} .twv-link {
+  color: #06c;
+  cursor: pointer;
+  text-decoration: underline;
+}
+#${CONTAINER_ID} .twv-link:hover {
+  color: #039;
+}
+#${CONTAINER_ID} .twv-version,
+#${CONTAINER_ID} .twv-search,
+#${CONTAINER_ID} .twv-message {
+  cursor: default;
+}
+#${CONTAINER_ID} .twv-version.is-toggle,
+#${CONTAINER_ID} .twv-search.is-toggle {
+  cursor: pointer;
+}
+#${CONTAINER_ID} .twv-version--neutral {
+  color: #111;
+}
+#${CONTAINER_ID} .twv-version--ok {
+  color: #080;
+  font-weight: 600;
+}
+#${CONTAINER_ID} .twv-version--bad {
+  color: #c00;
+  font-weight: 600;
+}
+#${CONTAINER_ID} .twv-search {
+  color: #111;
+  font-weight: normal;
+}
+#${CONTAINER_ID} .twv-search--bold {
+  font-weight: 700;
+}
+#${CONTAINER_ID} .twv-search--alert {
+  color: #c00;
+}
+#${CONTAINER_ID} .twv-label {
+  font-weight: 700;
+  margin-top: 4px;
+  width: 100%;
+}
+#${CONTAINER_ID} .twv-live-history {
+  width: 100%;
+  font-size: 12px;
+  color: #333;
+}
+#${CONTAINER_ID} .twv-pre {
+  margin: 4px 0 0;
+  padding: 0;
+  white-space: pre-wrap;
+  max-width: min(520px, 90vw);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.4;
+  color: #111;
+  background: transparent;
+  border: none;
+}
+`;
 const GITHUB_PAT_STORAGE_KEY = "tamper-web-version-github-pat";
+
+function ensureContainerStyles() {
+  if (document.getElementById(CONTAINER_STYLE_ID)) {
+    return;
+  }
+  const style = document.createElement("style");
+  style.id = CONTAINER_STYLE_ID;
+  style.textContent = CONTAINER_CSS;
+  document.head.appendChild(style);
+}
 const SITES_JSON_API_URL =
   "https://api.github.com/repos/carsdotcom/di-websites-live-history/contents/web/sites.json?ref=main";
 
@@ -214,9 +386,8 @@ async function loadLiveHistoryData(host, copyCcidHost) {
   }
 
   const label = document.createElement("div");
+  label.className = "twv-label";
   label.textContent = "DI Dashboard:";
-  label.style.cssText =
-    "font-weight: bold; margin-top: 4px; text-align: left; width: 100%;";
   host.appendChild(label);
 
   const ccid = getCcidFromSiteRecord(match);
@@ -225,8 +396,7 @@ async function loadLiveHistoryData(host, copyCcidHost) {
   }
 
   const pre = document.createElement("pre");
-  pre.style.cssText =
-    "margin: 4px 0 0; white-space: pre-wrap; max-width: min(520px, 90vw); text-align: left; font-size: 11px;";
+  pre.className = "twv-pre";
   pre.textContent = JSON.stringify(match, null, 2);
   host.appendChild(pre);
 }
@@ -384,48 +554,45 @@ function getSlug() {
   return document.head.innerHTML.substring(slugPosition, closingQuotePos);
 }
 
-function getLabelColor(version) {
+function getVersionClassName(version) {
   if (!CURRENT_VERSION_MSP && !CURRENT_VERSION_SSP) {
-    return "black";
+    return "twv-version--neutral";
   }
 
   if (CURRENT_VERSION_MSP === version || CURRENT_VERSION_SSP === version) {
-    return "green";
+    return "twv-version--ok";
   }
 
-  return "red";
+  return "twv-version--bad";
 }
 
 function makeVersionSpan() {
   const version = getVersion();
   const span = document.createElement("span");
+  span.className = `twv-version ${getVersionClassName(version)}`;
   span.textContent = version;
-  span.style = `color: ${getLabelColor(version)};`;
   return span;
 }
 
 function makeCacheBreakerSpan(message) {
   const span = document.createElement("span");
+  span.className = "twv-message";
   span.textContent = message;
   return span;
 }
 
 function makeCacheBreakerButton() {
   const button = document.createElement("button");
+  button.type = "button";
+  button.className = "twv-btn";
   button.textContent = "Break Cache";
-  button.style = `
-    cursor: pointer;
-    margin-left: 5px;
-  `;
   button.onclick = authenticate;
   return button;
 }
 
 function appendExpandedControlRow(expandedSection, control) {
   const row = document.createElement("div");
-  row.style.cssText =
-    "display: flex; flex-direction: row; align-items: center; justify-content: flex-start; width: 100%;";
-  control.style.marginLeft = "0";
+  row.className = "twv-row";
   row.appendChild(control);
   expandedSection.appendChild(row);
 }
@@ -442,7 +609,7 @@ function makeSearchServiceIndicatorSpan() {
   const red =
     (override === "search-service" && !searchServiceEnabled) ||
     (override === "algolia" && searchServiceEnabled);
-  span.style = `margin-left: 5px; font-weight: ${bold ? "bold" : "normal"}; color: ${red ? "red" : "black"};`;
+  span.className = `twv-search${bold ? " twv-search--bold" : ""}${red ? " twv-search--alert" : ""}`;
   return span;
 }
 
@@ -490,11 +657,9 @@ function makeCopySlugButton() {
   }
 
   const button = document.createElement("button");
+  button.type = "button";
+  button.className = "twv-btn";
   button.textContent = `Copy Slug ${slug}`;
-  button.style = `
-    cursor: pointer;
-    margin-left: 5px;
-  `;
   button.onclick = copySlugToClipboard;
   return button;
 }
@@ -506,33 +671,29 @@ function makeCopyDomainButton() {
   }
 
   const button = document.createElement("button");
+  button.type = "button";
+  button.className = "twv-btn";
   button.textContent = `Copy Domain ${domain}`;
-  button.style = `
-    cursor: pointer;
-    margin-left: 5px;
-  `;
   button.onclick = copyDomainToClipboard;
   return button;
 }
 
 function makeCopyCcidButton(ccid) {
   const button = document.createElement("button");
+  button.type = "button";
+  button.className = "twv-btn";
   button.textContent = `Copy CCID ${ccid}`;
-  button.style = `
-    cursor: pointer;
-    margin-left: 5px;
-  `;
   button.onclick = copyCcidToClipboard(ccid);
   return button;
 }
 
 function makeQuickLink(text, href) {
   const link = document.createElement("a");
+  link.className = "twv-link";
   link.href = href;
   link.textContent = text;
   link.target = "_blank";
   link.rel = "noopener noreferrer";
-  link.style.cssText = "color: blue; text-decoration: underline;";
   return link;
 }
 
@@ -543,8 +704,7 @@ function makeQuickLinksRow() {
   }
 
   const row = document.createElement("div");
-  row.style.cssText =
-    "display: flex; flex-direction: row; align-items: center; justify-content: flex-start; flex-wrap: wrap; gap: 8px; width: 100%;";
+  row.className = "twv-links";
 
   for (const { text, href } of links) {
     row.appendChild(makeQuickLink(text, href));
@@ -555,16 +715,9 @@ function makeQuickLinksRow() {
 
 function makeCloseButton() {
   const button = document.createElement("button");
+  button.type = "button";
+  button.className = "twv-close";
   button.textContent = "×";
-  button.style = `
-    background: none;
-    border: none;
-    font-size: 14px;
-    cursor: pointer;
-    margin: 0;
-    padding: 0 3px;
-    color: #666;
-  `;
   button.onclick = function () {
     document.getElementById(CONTAINER_ID)?.remove();
   };
@@ -573,19 +726,10 @@ function makeCloseButton() {
 }
 
 function createContainer(contents) {
+  ensureContainerStyles();
   document.getElementById(CONTAINER_ID)?.remove();
   const div = document.createElement("div");
   div.id = CONTAINER_ID;
-  div.style = `
-    position: absolute;
-    top: 0px;
-    left: 0px;
-    z-index: 100000;
-    background-color: white;
-    border: 1px solid black;
-    display: flex;
-    flex-direction: column;
-  `;
 
   contents.forEach((element) => {
     div.appendChild(element);
@@ -596,38 +740,24 @@ function createContainer(contents) {
 
 function createVersionContainer() {
   const summaryRow = document.createElement("div");
-  summaryRow.style.cssText = `
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 5px;
-    padding: 4px 6px;
-  `;
+  summaryRow.className = "twv-summary";
 
   const closeButton = makeCloseButton();
   const versionSpan = makeVersionSpan();
   const searchServiceSpan = makeSearchServiceIndicatorSpan();
-  searchServiceSpan.style.marginLeft = "0";
 
   const toggleTitle = "Click to show or hide controls";
   versionSpan.title = toggleTitle;
-  versionSpan.style.cursor = "pointer";
+  versionSpan.classList.add("is-toggle");
   searchServiceSpan.title = toggleTitle;
-  searchServiceSpan.style.cursor = "pointer";
+  searchServiceSpan.classList.add("is-toggle");
 
   summaryRow.appendChild(closeButton);
   summaryRow.appendChild(versionSpan);
   summaryRow.appendChild(searchServiceSpan);
 
   const expandedSection = document.createElement("div");
-  expandedSection.style.cssText = `
-    display: none;
-    flex-direction: column;
-    gap: 6px;
-    border-top: 1px solid #ccc;
-    padding: 6px;
-  `;
+  expandedSection.className = "twv-expanded";
 
   const quickLinksRow = makeQuickLinksRow();
   if (quickLinksRow) {
@@ -647,14 +777,13 @@ function createVersionContainer() {
   expandedSection.appendChild(copyCcidHost);
 
   const liveHistoryHost = document.createElement("div");
-  liveHistoryHost.style.cssText =
-    "width: 100%; font-size: 12px; text-align: left; color: #333;";
+  liveHistoryHost.className = "twv-live-history";
   expandedSection.appendChild(liveHistoryHost);
 
   let expanded = false;
   function setExpanded(next) {
     expanded = next;
-    expandedSection.style.display = expanded ? "flex" : "none";
+    expandedSection.classList.toggle("is-open", expanded);
   }
 
   function onToggleClick(event) {
@@ -673,7 +802,10 @@ function createVersionContainer() {
 }
 
 function createCacheBreakerContainer(message) {
-  createContainer([makeCacheBreakerSpan(message)]);
+  const row = document.createElement("div");
+  row.className = "twv-summary";
+  row.appendChild(makeCacheBreakerSpan(message));
+  createContainer([row]);
 }
 
 if (!handleCacheBreaker() && isDiSite()) {
