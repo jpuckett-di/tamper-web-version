@@ -8,7 +8,7 @@
 // @grant       unsafeWindow
 // @connect     api.github.com
 // @author      Jeff Puckett
-// @version 1.11.0
+// @version 1.11.1
 // @description Shows the version of the website with some additonal status and controls
 // @homepageURL https://github.com/jpuckett-di/tamper-web-version
 // @downloadURL https://raw.githubusercontent.com/jpuckett-di/tamper-web-version/refs/heads/main/main.user.js
@@ -66,7 +66,9 @@ function getQuickLinks() {
     return href ? [{ text: spec.text, href }] : [];
   });
 }
-const DEALER_INSPIRE_MAST = `\n  ______  _______ _______        _______  ______ _____ __   _ _______  _____  _____  ______ _______\n  |     \\ |______ |_____| |      |______ |_____/   |   | \\  | |______ |_____]   |   |_____/ |______\n  |_____/ |______ |     | |_____ |______ |    \\_ __|__ |  \\_| ______| |       __|__ |    \\_ |______\n         Visit http://www.dealerinspire.com to Inspire your visitors and turn them into customers.\n`;
+// DI HTML comment banner (footer URL may vary).
+const DEALER_INSPIRE_MAST_SIGNATURE =
+  "______  _______ _______        _______  ______ _____ __   _ _______  _____  _____  ______ _______";
 const CACHE_BREAKER_STATUS_STORAGE_KEY =
   "tamper-web-version-cache-breaker-status";
 const CACHE_BREAKER_REDIRECT_URL_STORAGE_KEY =
@@ -310,9 +312,12 @@ function handleCacheBreaker() {
 }
 
 function isDiSite() {
-  // Check multiple possible child nodes for the DI mast
   for (let i = 0; i < document.childNodes.length; i++) {
-    if (document.childNodes[i]?.textContent === DEALER_INSPIRE_MAST) {
+    const text = document.childNodes[i]?.textContent;
+    if (!text) {
+      continue;
+    }
+    if (text.includes(DEALER_INSPIRE_MAST_SIGNATURE)) {
       return true;
     }
   }
