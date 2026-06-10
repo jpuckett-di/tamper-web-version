@@ -8,7 +8,7 @@
 // @grant       unsafeWindow
 // @connect     api.github.com
 // @author      Jeff Puckett
-// @version 1.11.2
+// @version 1.12.0
 // @description Shows the version of the website with some additonal status and controls
 // @homepageURL https://github.com/jpuckett-di/tamper-web-version
 // @downloadURL https://raw.githubusercontent.com/jpuckett-di/tamper-web-version/refs/heads/main/main.user.js
@@ -32,6 +32,10 @@ const QUICK_LINKS = [
     },
   },
   { text: "New", href: "/new-vehicles/" },
+  {
+    text: "Update",
+    href: "/wp/wp-admin/edit.php?post_type=inventory&page=inventory_settings&tab=advanced",
+  },
   {
     text: "CVV",
     href: "/wp/wp-admin/edit.php?post_type=inventory&page=inventory_settings&tab=vehicle_variables",
