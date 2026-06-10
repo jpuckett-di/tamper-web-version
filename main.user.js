@@ -8,7 +8,7 @@
 // @grant       unsafeWindow
 // @connect     api.github.com
 // @author      Jeff Puckett
-// @version 1.11.1
+// @version 1.11.2
 // @description Shows the version of the website with some additonal status and controls
 // @homepageURL https://github.com/jpuckett-di/tamper-web-version
 // @downloadURL https://raw.githubusercontent.com/jpuckett-di/tamper-web-version/refs/heads/main/main.user.js
@@ -160,6 +160,12 @@ const CONTAINER_CSS = `
 }
 #${CONTAINER_ID} .twv-btn:hover {
   background: #e4e4e4;
+}
+#${CONTAINER_ID} .twv-btn:active {
+  background: #d4d4d4;
+  border-color: #666;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
+  transform: translateY(1px);
 }
 #${CONTAINER_ID} .twv-close {
   appearance: none;
